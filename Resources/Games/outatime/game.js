@@ -74,7 +74,7 @@
     get(key, fallback) { try { const v = localStorage.getItem('outatime.' + key); return v ? JSON.parse(v) : fallback; } catch { return fallback; } },
     set(key, v) { try { localStorage.setItem('outatime.' + key, JSON.stringify(v)); } catch {} },
   };
-  const opts = Object.assign({ startLevel: 1, music: true, musicVol: 7, sfxVol: 8, ghost: true, shake: true, das: 167 }, store.get('options', {}));
+  const opts = Object.assign({ startLevel: 1, music: true, musicVol: 7, sfxVol: 8, ghost: false, shake: true, das: 167 }, store.get('options', {}));
   let highScores = store.get('scores', []);
   let lastName = store.get('name', '');
 

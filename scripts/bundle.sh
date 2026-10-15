@@ -15,6 +15,7 @@ cp "$BIN/Jigowatt" "$APP/Contents/MacOS/Jigowatt"
 cp "$BIN/jigowatt-mcp" "$APP/Contents/MacOS/jigowatt-mcp"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
+cp -R Resources/Games "$APP/Contents/Resources/Games"
 
 # libghostty locates themes/shell-integration via Contents/Resources/{terminfo,ghostty}.
 cp -R vendor/ghostty/zig-out/share/terminfo "$APP/Contents/Resources/terminfo"

@@ -90,6 +90,10 @@ final class SessionManager: ObservableObject {
     var selected: TerminalSession? { sessions.first { $0.id == selectedID } }
 
     func open(_ host: SSHHost) {
+        if let game = GameCatalog.game(unlockedBy: host) {
+            GameLauncher.open(game)
+            return
+        }
         let session = TerminalSession(host: host)
         sessions.append(session)
         selectedID = session.id

@@ -1,0 +1,7 @@
+{
+  "name": "OUTATIME",
+  "entry": "index.html",
+  "width": 960,
+  "height": 760,
+  "secretHosts": ["88mph", "outatime"]
+}

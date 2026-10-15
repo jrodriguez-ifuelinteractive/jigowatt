@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OUTATIME</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="overlay">
+  <section id="screen-title" class="screen">
+    <pre class="boot" id="boot"></pre>
+    <div class="reveal">
+      <pre class="logo" id="logo" aria-label="OUTATIME"></pre>
+      <p class="tagline">1.21 Jigowatt Edition</p>
+    <nav class="menu">
+      <button class="btn" data-action="start">Start Game</button>
+      <button class="btn" data-action="options">Options</button>
+      <button class="btn" data-action="scores">High Scores</button>
+    </nav>
+    <p class="hint">↑↓ to choose · Enter to select</p>
+    </div>
+  </section>
+
+  <section id="screen-options" class="screen">
+    <h2>Options</h2>
+    <div class="options">
+      <div class="opt" data-opt="startLevel" tabindex="0"><span>Start Level</span><b></b></div>
+      <div class="opt" data-opt="music" tabindex="0"><span>Music</span><b></b></div>
+      <div class="opt" data-opt="musicVol" tabindex="0"><span>Music Volume</span><b></b></div>
+      <div class="opt" data-opt="sfxVol" tabindex="0"><span>Sound Effects</span><b></b></div>
+      <div class="opt" data-opt="ghost" tabindex="0"><span>Ghost Piece</span><b></b></div>
+      <div class="opt" data-opt="shake" tabindex="0"><span>Screen Shake</span><b></b></div>
+      <div class="opt" data-opt="das" tabindex="0"><span>Auto-Shift Delay</span><b></b></div>
+    </div>
+    <nav class="menu">
+      <button class="btn" data-action="back">Back</button>
+    </nav>
+    <p class="hint">←→ to change · Esc to go back</p>
+  </section>
+
+  <section id="screen-scores" class="screen">
+    <h2>High Scores</h2>
+    <table class="scores"><tbody></tbody></table>
+    <nav class="menu">
+      <button class="btn" data-action="back">Back</button>
+    </nav>
+  </section>
+
+  <section id="screen-pause" class="screen">
+    <h2>Time Paused</h2>
+    <nav class="menu">
+      <button class="btn" data-action="resume">Resume</button>
+      <button class="btn" data-action="restart">Restart</button>
+      <button class="btn" data-action="options">Options</button>
+      <button class="btn" data-action="quit">Quit to Title</button>
+    </nav>
+  </section>
+
+  <section id="screen-over" class="screen">
+    <h2 class="over-title">TIME'S UP</h2>
+    <p class="subtitle">Game over</p>
+    <div class="final">
+      <div><span>Score</span><b id="f-score">0</b></div>
+      <div><span>Lines</span><b id="f-lines">0</b></div>
+      <div><span>Level</span><b id="f-level">1</b></div>
+      <div><span>Time</span><b id="f-time">0:00</b></div>
+    </div>
+    <form id="name-entry" autocomplete="off">
+      <p class="newbest">New high score!</p>
+      <input id="name" maxlength="12" placeholder="Your name" spellcheck="false">
+      <button class="btn" type="submit">Save</button>
+    </form>
+    <table class="scores"><tbody></tbody></table>
+    <nav class="menu">
+      <button class="btn" data-action="restart">Play Again</button>
+      <button class="btn" data-action="quit">Title</button>
+    </nav>
+  </section>
+
+  <aside id="controls">
+    <div><kbd>←</kbd><kbd>→</kbd> Move</div>
+    <div><kbd>↓</kbd> Soft drop</div>
+    <div><kbd>Space</kbd> Hard drop</div>
+    <div><kbd>↑</kbd><kbd>X</kbd> Rotate ↻</div>
+    <div><kbd>Z</kbd> Rotate ↺</div>
+    <div><kbd>C</kbd><kbd>⇧</kbd> Hold</div>
+    <div><kbd>Esc</kbd><kbd>P</kbd> Pause</div>
+    <div><kbd>M</kbd> Mute music</div>
+  </aside>
+</div>
+
+<script src="audio.js"></script>
+<script src="music.js"></script>
+<script src="game.js"></script>
+</body>
+</html>

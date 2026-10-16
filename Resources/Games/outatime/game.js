@@ -588,13 +588,10 @@
 
     // NEXT queue.
     const R = RIGHT_COL;
-    box(R, 2, 20, 18, 'NEXT');
-    if (queue) {
-      piece(queue[0], R + 1, 18, 4);
-      for (let i = 1; i < 5; i++) piece(queue[i], R + 1, 18, 4 + i * 3, 1 - i * 0.15);
-    }
-    if (mode !== 'title' && b2b) put(R + 1, 20, '» B2B READY', '#ffd43b', { bold: true, glow: 6 });
-    if (mode !== 'title' && combo > 0) put(R + 1, 21, `» COMBO x${combo}`, '#7cf0ff', { bold: true, glow: 6 });
+    box(R, 2, 20, 6, 'NEXT');
+    if (queue) piece(queue[0], R + 1, 18, 4);
+    if (mode !== 'title' && b2b) put(R + 1, 9, '» B2B READY', '#ffd43b', { bold: true, glow: 6 });
+    if (mode !== 'title' && combo > 0) put(R + 1, 10, `» COMBO x${combo}`, '#7cf0ff', { bold: true, glow: 6 });
   }
 
   function drawEffects() {

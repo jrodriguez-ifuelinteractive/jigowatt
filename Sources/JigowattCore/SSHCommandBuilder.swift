@@ -8,12 +8,12 @@ public enum SSHCommandBuilder {
     public enum Mode: Sendable {
         /// Interactive terminal session (PTY).
         case interactive
-        /// Non-interactive remote command for the agent.
-        case agentCommand(connectTimeout: Int)
+        /// Interactive terminal session driven by the coding agent: never prompts a human.
+        case agentSession
     }
 
     /// Arguments after the executable name.
-    public static func arguments(for host: SSHHost, mode: Mode, remoteCommand: String? = nil) -> [String] {
+    public static func arguments(for host: SSHHost, mode: Mode) -> [String] {
         var args: [String] = []
 
         if let port = host.port { args += ["-p", String(port)] }
@@ -34,15 +34,12 @@ public enum SSHCommandBuilder {
         switch mode {
         case .interactive:
             args.append("-t")
-        case .agentCommand(let timeout):
+        case .agentSession:
             args += [
-                "-T",
-                "-o", "ConnectTimeout=\(timeout)",
-                // Nobody can answer a host-key prompt; connect once from the app first.
+                "-t",
+                "-o", "ConnectTimeout=10",
+                // Nobody can answer a host-key prompt for the agent; the user connects once first.
                 "-o", "StrictHostKeyChecking=yes",
-                "-o", "ControlMaster=auto",
-                "-o", "ControlPath=\(JigowattPaths.controlPath)",
-                "-o", "ControlPersist=60s",
                 "-o", "ServerAliveInterval=15",
             ]
             if host.authMethod == .keyOrAgent {
@@ -52,7 +49,6 @@ public enum SSHCommandBuilder {
         }
 
         args += ["--", host.hostname]
-        if let remoteCommand { args.append(remoteCommand) }
         return args
     }
 

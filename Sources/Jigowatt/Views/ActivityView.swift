@@ -1,3 +1,4 @@
+import Combine
 import SwiftUI
 import JigowattCore
 
@@ -22,7 +23,7 @@ struct ActivityView: View {
             }
             TableColumn("Result") { e in
                 Text(resultText(e))
-                    .foregroundStyle(e.outcome == "ok" ? Color.secondary : Color.orange)
+                    .foregroundStyle(["ok", "sent", "running"].contains(e.outcome) ? Color.secondary : Color.orange)
             }
             .width(min: 90, ideal: 120)
         }
@@ -44,7 +45,11 @@ struct ActivityView: View {
     private func resultText(_ e: AuditEntry) -> String {
         switch e.outcome {
         case "refused": return "refused"
-        case "timeout": return "timed out"
+        case "running": return "running…"
+        case "timeout": return "still running"
+        case "sent": return "sent"
+        case "closed": return "closed"
+        case "interrupted": return "interrupted"
         default:
             let code = e.exitCode.map { "exit \($0)" } ?? ""
             let dur = e.durationSeconds.map { String(format: " · %.1fs", $0) } ?? ""

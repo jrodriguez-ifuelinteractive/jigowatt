@@ -1,5 +1,6 @@
 import AppKit
 import GhosttyKit
+import JigowattCore
 
 /// An NSView hosting one libghostty surface. libghostty attaches its own Metal layer to
 /// the view and runs the child process (here: /usr/bin/ssh) on a PTY.
@@ -85,6 +86,36 @@ final class TerminalSurfaceView: NSView, NSTextInputClient {
 
     func setVisible(_ visible: Bool) {
         if let surface { ghostty_surface_set_occlusion(surface, visible) }
+    }
+
+    // MARK: Programmatic I/O (agent sessions)
+
+    /// Pastes text, honoring bracketed paste if the remote shell enabled it.
+    func paste(_ text: String) {
+        guard let surface, !text.isEmpty else { return }
+        text.withCString { ghostty_surface_text(surface, $0, UInt(strlen($0))) }
+    }
+
+    /// Writes bytes to the terminal as if typed (keys, control characters).
+    func type(_ text: String) {
+        guard let surface, !text.isEmpty else { return }
+        let action = TerminalEscape.textAction(text)
+        _ = action.withCString { ghostty_surface_binding_action(surface, $0, UInt(strlen($0))) }
+    }
+
+    /// The visible screen, or the whole scrollback plus screen.
+    func readText(includeScrollback: Bool) -> String {
+        guard let surface else { return "" }
+        let tag = includeScrollback ? GHOSTTY_POINT_SCREEN : GHOSTTY_POINT_ACTIVE
+        var text = ghostty_text_s()
+        let sel = ghostty_selection_s(
+            top_left: ghostty_point_s(tag: tag, coord: GHOSTTY_POINT_COORD_TOP_LEFT, x: 0, y: 0),
+            bottom_right: ghostty_point_s(tag: tag, coord: GHOSTTY_POINT_COORD_BOTTOM_RIGHT, x: 0, y: 0),
+            rectangle: false)
+        guard ghostty_surface_read_text(surface, sel, &text) else { return "" }
+        defer { ghostty_surface_free_text(surface, &text) }
+        guard let ptr = text.text else { return "" }
+        return String(cString: ptr)
     }
 
     // MARK: Layout

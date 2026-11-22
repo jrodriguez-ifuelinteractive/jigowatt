@@ -12,6 +12,10 @@ final class TerminalSession: ObservableObject, Identifiable {
 
     let id = UUID()
     let host: SSHHost
+    /// Opened by the coding agent over MCP. Agent tools only ever touch these tabs.
+    let isAgent: Bool
+    /// True while an agent command is running in this tab.
+    @Published var agentBusy = false
     @Published private(set) var title: String
     @Published private(set) var state: State = .running
     /// Bumped whenever a new surface view replaces the old one (reconnect).
@@ -19,8 +23,9 @@ final class TerminalSession: ObservableObject, Identifiable {
     private(set) var surfaceView: TerminalSurfaceView?
     private var lastExitCode: Int32?
 
-    init(host: SSHHost) {
+    init(host: SSHHost, isAgent: Bool = false) {
         self.host = host
+        self.isAgent = isAgent
         self.title = host.displayName
         connect()
     }
@@ -36,15 +41,21 @@ final class TerminalSession: ObservableObject, Identifiable {
         }
 
         let view = TerminalSurfaceView(app: app, launch: .init(
-            command: Self.shellCommand(for: host),
+            command: Self.shellCommand(for: host, mode: isAgent ? .agentSession : .interactive),
             environment: SSHCommandBuilder.askpassEnvironment(
-                for: host, helperPath: JigowattPaths.helperExecutable.path, interactive: true),
+                for: host, helperPath: JigowattPaths.helperExecutable.path, interactive: !isAgent),
             fontSize: Float(TerminalPreferences.fontSize)))
         view.onTitleChange = { [weak self] title in
-            guard let self, !title.isEmpty else { return }
+            // Agent tabs keep the host name; the shell would title them with the typed scaffolding.
+            guard let self, !self.isAgent, !title.isEmpty else { return }
             self.title = title
         }
-        view.onChildExited = { [weak self] code in self?.lastExitCode = code }
+        // Ghostty keeps the surface open (instead of closing it) when the child exits very quickly,
+        // e.g. ssh failing to connect, so treat the exit itself as the end of the session.
+        view.onChildExited = { [weak self] code in
+            self?.lastExitCode = code
+            self?.markEnded()
+        }
         view.onClose = { [weak self] _ in self?.markEnded() }
 
         surfaceView = view
@@ -68,8 +79,8 @@ final class TerminalSession: ObservableObject, Identifiable {
     }
 
     /// libghostty runs the command through `bash -c "exec -l …"` on macOS, so quote each argument.
-    static func shellCommand(for host: SSHHost) -> String {
-        let args = [SSHCommandBuilder.sshPath] + SSHCommandBuilder.arguments(for: host, mode: .interactive)
+    static func shellCommand(for host: SSHHost, mode: SSHCommandBuilder.Mode = .interactive) -> String {
+        let args = [SSHCommandBuilder.sshPath] + SSHCommandBuilder.arguments(for: host, mode: mode)
         return args.map(shellQuote).joined(separator: " ")
     }
 
@@ -97,6 +108,16 @@ final class SessionManager: ObservableObject {
         let session = TerminalSession(host: host)
         sessions.append(session)
         selectedID = session.id
+    }
+
+    /// Opens a tab for the agent without taking focus from the user's current tab.
+    func openAgentSession(_ host: SSHHost) -> TerminalSession {
+        let session = TerminalSession(host: host, isAgent: true)
+        // Give the terminal a real size even if the window is closed (background mode).
+        if let view = session.surfaceView { view.setFrameSize(view.frame.size) }
+        sessions.append(session)
+        if selectedID == nil { selectedID = session.id } else { session.surfaceView?.setVisible(false) }
+        return session
     }
 
     func close(_ id: TerminalSession.ID) {

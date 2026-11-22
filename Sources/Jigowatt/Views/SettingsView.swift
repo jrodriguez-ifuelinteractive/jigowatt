@@ -229,6 +229,7 @@ private struct ThemeSwatch: View {
 }
 
 private struct MCPSettings: View {
+    @AppStorage(AppPreferences.keepRunningKey) private var keepRunning = true
     private var helperPath: String { JigowattPaths.helperExecutable.path }
 
     private var claudeCommand: String {
@@ -246,7 +247,12 @@ private struct MCPSettings: View {
     var body: some View {
         Form {
             Section {
-                Text("Coding agents can list your hosts and run commands on hosts where you've turned on **Allow coding agent**. Every command is logged in Window → Agent Activity.")
+                Text("Coding agents can list your hosts and work on hosts where you've turned on **Allow coding agent**. The agent gets its own tab per host, marked ✦ AGENT, with a real shell you can watch or type into. Every request is logged in Window → Agent Activity.")
+                    .fixedSize(horizontal: false, vertical: true)
+                Toggle("Keep running in the menu bar when the window is closed", isOn: $keepRunning)
+                Text("Sessions, including agent tabs, stay connected while the window is closed. If Jigowatt isn't running, the agent starts it in the background.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 if !FileManager.default.isExecutableFile(atPath: helperPath) {
                     Label("MCP binary not found at this path. Build with `make app`.", systemImage: "exclamationmark.triangle")

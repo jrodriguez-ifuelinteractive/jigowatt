@@ -25,9 +25,20 @@ private struct TabButton: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            Circle()
-                .fill(session.state == .running ? Color.green : Color.secondary)
-                .frame(width: 7, height: 7)
+            if session.agentBusy {
+                ProgressView().controlSize(.mini)
+            } else {
+                Circle()
+                    .fill(session.state == .running ? Color.green : Color.secondary)
+                    .frame(width: 7, height: 7)
+            }
+            if session.isAgent {
+                Text("✦ AGENT")
+                    .font(.system(size: 9, weight: .bold))
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 1)
+                    .background(Color.accentColor.opacity(0.25), in: RoundedRectangle(cornerRadius: 3))
+            }
             Text(session.title)
                 .lineLimit(1)
                 .truncationMode(.middle)
@@ -47,7 +58,7 @@ private struct TabButton: View {
         .contentShape(Rectangle())
         .onTapGesture { sessions.selectedID = session.id }
         .onHover { hovering = $0 }
-        .help(session.host.summary)
+        .help(session.isAgent ? "Coding agent session on \(session.host.summary). You can watch or type here." : session.host.summary)
     }
 }
 
@@ -79,7 +90,7 @@ private struct SessionView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            SurfaceRepresentable(view: session.surfaceView)
+            SurfaceRepresentable(view: session.surfaceView, focusOnAttach: session.id == sessions.selectedID)
                 .id(session.generation)
             if case .ended(let code) = session.state {
                 HStack {
@@ -100,6 +111,8 @@ private struct SessionView: View {
 
 private struct SurfaceRepresentable: NSViewRepresentable {
     let view: TerminalSurfaceView?
+    /// Agent tabs open in the background; they must not take keyboard focus from the user's tab.
+    let focusOnAttach: Bool
 
     func makeNSView(context: Context) -> NSView {
         let container = NSView()
@@ -117,6 +130,6 @@ private struct SurfaceRepresentable: NSViewRepresentable {
         view.frame = container.bounds
         view.autoresizingMask = [.width, .height]
         container.addSubview(view)
-        DispatchQueue.main.async { view.window?.makeFirstResponder(view) }
+        if focusOnAttach { DispatchQueue.main.async { view.window?.makeFirstResponder(view) } }
     }
 }

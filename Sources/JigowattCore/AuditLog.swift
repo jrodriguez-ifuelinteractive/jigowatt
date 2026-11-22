@@ -12,8 +12,9 @@ public struct AuditEntry: Codable, Identifiable, Sendable {
     public var outcome: String
     public var client: String
 
-    public init(timestamp: Date = Date(), hostName: String, hostID: UUID?, command: String,
+    public init(id: UUID = UUID(), timestamp: Date = Date(), hostName: String, hostID: UUID?, command: String,
                 exitCode: Int32?, durationSeconds: Double?, outcome: String, client: String) {
+        self.id = id
         self.timestamp = timestamp
         self.hostName = hostName
         self.hostID = hostID
@@ -26,6 +27,8 @@ public struct AuditEntry: Codable, Identifiable, Sendable {
 }
 
 /// Append-only JSON Lines log of every command the agent asked to run.
+/// An entry is written when a request arrives ("running") and again with the same id when
+/// it finishes; readers keep the latest line per id.
 public struct AuditLog: Sendable {
     public let url: URL
 
@@ -57,10 +60,16 @@ public struct AuditLog: Sendable {
         }
     }
 
-    /// Most recent first.
+    /// Most recent first, one row per entry id (its latest state).
     public func read(limit: Int = 500) -> [AuditEntry] {
         guard let data = try? Data(contentsOf: url) else { return [] }
-        let entries = data.split(separator: 0x0A).compactMap { try? Self.decoder.decode(AuditEntry.self, from: Data($0)) }
-        return Array(entries.suffix(limit).reversed())
+        var order: [UUID] = []
+        var latest: [UUID: AuditEntry] = [:]
+        for line in data.split(separator: 0x0A) {
+            guard let entry = try? Self.decoder.decode(AuditEntry.self, from: Data(line)) else { continue }
+            if latest[entry.id] == nil { order.append(entry.id) }
+            latest[entry.id] = entry
+        }
+        return order.suffix(limit).reversed().compactMap { latest[$0] }
     }
 }

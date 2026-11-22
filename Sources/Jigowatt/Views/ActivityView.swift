@@ -45,6 +45,7 @@ struct ActivityView: View {
     private func resultText(_ e: AuditEntry) -> String {
         switch e.outcome {
         case "refused": return "refused"
+        case "denied": return "denied by you"
         case "running": return "running…"
         case "timeout": return "still running"
         case "sent": return "sent"

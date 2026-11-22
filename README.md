@@ -70,6 +70,7 @@ Each command is typed into that shell between two hidden marker lines. The app r
 ### Safety
 
 - Agent access is **per host and off by default**. Enable it in the host editor or the sidebar context menu; enabled hosts show a ✦ badge.
+- **Each new agent session needs your approval.** Jigowatt asks before the agent opens or reopens a connection to a host. "Don't Allow" is the default button, and a prompt left unanswered for 60 s is denied. You can turn this off in **Settings → Agent (MCP)**.
 - Agent tools only touch agent tabs, never tabs you opened yourself.
 - The app checks access and writes the audit entry **before** anything is typed. Every command, input and session close, including refused requests, is appended to `~/Library/Application Support/Jigowatt/audit.jsonl` and shown in **Window → Agent Activity**, and running commands show as running.
 - Agent tabs use `StrictHostKeyChecking=yes`, so connect to a new host once yourself to accept its key. Key-based hosts use `BatchMode`, and the agent's ssh never shows password or passphrase dialogs.

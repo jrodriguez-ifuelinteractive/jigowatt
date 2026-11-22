@@ -90,7 +90,7 @@ final class AgentBroker {
         }
         let host = try authorize(r.host, logging: command)
         let timeout = min(Self.maxTimeout, max(1, r.timeoutSeconds ?? 60))
-        let session = try await agentSession(for: host, create: true)
+        let session = try await agentSession(for: host, create: true, command: command)
 
         if let busy = refreshPending(session) {
             throw Failure(message: """
@@ -289,13 +289,33 @@ final class AgentBroker {
         return session
     }
 
-    private func agentSession(for host: SSHHost, create: Bool) async throws -> TerminalSession {
+    /// Approval prompts in flight, per host, so concurrent requests share one prompt.
+    private var approvals: [UUID: Task<Bool, Never>] = [:]
+
+    /// Asks the user before the agent opens a connection (unless turned off in Settings).
+    private func requireApproval(for host: SSHHost, command: String?) async throws {
+        guard AppPreferences.confirmAgentSessions else { return }
+        let task = approvals[host.id] ?? Task { await AgentApproval.ask(host: host, command: command) }
+        approvals[host.id] = task
+        let allowed = await task.value
+        approvals[host.id] = nil
+        guard allowed else {
+            audit.append(AuditEntry(hostName: host.displayName, hostID: host.id, command: command ?? "[open session]",
+                                    exitCode: nil, durationSeconds: nil, outcome: "denied", client: "mcp"))
+            throw Failure(message: "The user didn't allow the agent to connect to \(host.displayName) (denied or no answer within \(Int(AgentApproval.timeout))s). Ask the user before trying again.")
+        }
+    }
+
+    private func agentSession(for host: SSHHost, create: Bool, command: String? = nil) async throws -> TerminalSession {
         if let session = existingSession(for: host) {
             if session.state == .running {
                 if setUpGeneration[session.id] == nil, create { try await waitUntilReady(session) }
                 return session
             }
             guard create else { return session }
+            try await requireApproval(for: host, command: command)
+            // Another request may have reconnected it while the prompt was open.
+            if session.state == .running, isOpen(session) { return session }
             pending[session.id] = nil
             hooked.remove(session.id)
             session.agentBusy = false
@@ -306,6 +326,9 @@ final class AgentBroker {
         guard create else {
             throw Failure(message: "No agent session is open on \(host.displayName). run_command opens one.")
         }
+        try await requireApproval(for: host, command: command)
+        // Another request for this host may have opened the tab while the prompt was open.
+        if let session = existingSession(for: host), session.state == .running { return session }
         let session = sessions.openAgentSession(host)
         tabs[host.id] = session
         try await waitUntilReady(session)

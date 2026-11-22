@@ -17,7 +17,7 @@ enum MCPServer {
                 Access to the user's SSH machines configured in Jigowatt. Call list_hosts first; tools only work \
                 on hosts where agentAllowed is true (the user controls that in the app). \
                 Commands run in a real interactive shell in a Jigowatt tab the user can watch: one persistent \
-                session per host, so cd, environment variables and other shell state carry over between \
+                session per host (the user is asked to approve each new session), so cd, environment variables and other shell state carry over between \
                 run_command calls. If a command is still running when run_command returns (timeout, or a \
                 prompt waiting for input), use read_screen to check it and send_input to answer or interrupt it \
                 (keys ["ctrl_c"]). Every request is logged for the user.
@@ -39,7 +39,7 @@ enum MCPServer {
                     let timeout = number(args["timeout_seconds"]) ?? 60
                     return try await relay(AgentRequest(
                         tool: .runCommand, host: args["host"]?.stringValue, command: args["command"]?.stringValue,
-                        timeoutSeconds: timeout), waitUpTo: min(600, timeout) + 60)
+                        timeoutSeconds: timeout), waitUpTo: min(600, timeout) + 60 + 70)
                 case "send_input":
                     let keys = args["keys"]?.arrayValue?.compactMap(\.stringValue)
                     let wait = number(args["wait_ms"]).map { Int($0) }

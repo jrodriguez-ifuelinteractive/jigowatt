@@ -14,10 +14,21 @@ final class AppModel {
 }
 
 enum AppPreferences {
+    /// Defaults to true when unset; `bool(forKey:)` also accepts "YES"/"NO" launch arguments.
+    private static func flag(_ key: String) -> Bool {
+        UserDefaults.standard.object(forKey: key) == nil ? true : UserDefaults.standard.bool(forKey: key)
+    }
+
     static let keepRunningKey = "keepRunningInMenuBar"
     /// Show a menu bar icon and keep running (without a Dock icon) after the window closes.
     static var keepRunning: Bool {
-        UserDefaults.standard.object(forKey: keepRunningKey) as? Bool ?? true
+        flag(keepRunningKey)
+    }
+
+    static let confirmAgentSessionsKey = "confirmAgentSessions"
+    /// Ask before a coding agent opens an ssh session on a host.
+    static var confirmAgentSessions: Bool {
+        flag(confirmAgentSessionsKey)
     }
 }
 

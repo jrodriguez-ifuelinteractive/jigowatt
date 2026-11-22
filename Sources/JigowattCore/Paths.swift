@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 public enum JigowattPaths {
@@ -24,8 +25,14 @@ public enum JigowattPaths {
     public static var hostsFile: URL { supportDirectory.appendingPathComponent("hosts.json") }
     public static var auditLog: URL { supportDirectory.appendingPathComponent("audit.jsonl") }
 
-    /// Short path for ssh ControlMaster sockets (unix socket paths are limited to ~104 bytes).
-    public static let controlPath = "~/.ssh/jgw-%C"
+    /// Socket the running app listens on for `jigowatt-mcp`. Unix socket paths are limited
+    /// to 104 bytes, so very long support directories (e.g. JIGOWATT_HOME in tests) fall back to /tmp.
+    public static var agentSocket: String {
+        let preferred = supportDirectory.appendingPathComponent("agent.sock").path
+        if preferred.utf8.count < 100 { return preferred }
+        let hash = Insecure.MD5.hash(data: Data(preferred.utf8)).prefix(6).map { String(format: "%02x", $0) }.joined()
+        return "/tmp/jigowatt-\(getuid())-\(hash).sock"
+    }
 
     /// The MCP/askpass helper binary, which sits next to the app executable
     /// (inside the .app bundle, or in .build/<config> during development).

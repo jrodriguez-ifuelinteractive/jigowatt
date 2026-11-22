@@ -118,6 +118,49 @@ import Testing
     }
 }
 
+@Suite struct AuditLogRotationTests {
+    private func entry(_ command: String, id: UUID = UUID(), outcome: String = "ok") -> AuditEntry {
+        AuditEntry(id: id, hostName: "h", hostID: nil, command: command, exitCode: 0, durationSeconds: 0, outcome: outcome, client: "test")
+    }
+
+    private func tempLog(maxBytes: Int, archives: Int) -> AuditLog {
+        AuditLog(url: FileManager.default.temporaryDirectory.appendingPathComponent("jgw-\(UUID().uuidString)/audit.jsonl"),
+                 maxBytes: maxBytes, archiveCount: archives)
+    }
+
+    private func size(_ url: URL) -> Int {
+        ((try? FileManager.default.attributesOfItem(atPath: url.path))?[.size] as? Int) ?? 0
+    }
+
+    @Test func rotatesAndKeepsOnlyTheConfiguredArchives() {
+        let log = tempLog(maxBytes: 600, archives: 2)
+        for i in 0..<40 { log.append(entry("command-\(i)")) }
+        let fm = FileManager.default
+        #expect(log.archiveURL(1).lastPathComponent == "audit.1.jsonl")
+        #expect(fm.fileExists(atPath: log.archiveURL(1).path))
+        #expect(fm.fileExists(atPath: log.archiveURL(2).path))
+        #expect(!fm.fileExists(atPath: log.archiveURL(3).path))
+        for file in [log.url, log.archiveURL(1), log.archiveURL(2)] { #expect(size(file) <= 600) }
+        // The newest entry is in the live file and the oldest ones were dropped.
+        let rows = log.read(limit: 1000)
+        #expect(rows.first?.command == "command-39")
+        #expect(!rows.contains { $0.command == "command-0" })
+    }
+
+    @Test func readSpansArchivesAndKeepsLatestStateAcrossRotation() {
+        let log = tempLog(maxBytes: 400, archives: 3)
+        let id = UUID()
+        log.append(entry("long-running", id: id, outcome: "running"))
+        for i in 0..<5 { log.append(entry("other-\(i)")) }
+        log.append(entry("long-running", id: id, outcome: "ok"))
+        #expect(FileManager.default.fileExists(atPath: log.archiveURL(1).path))
+        let rows = log.read()
+        #expect(rows.filter { $0.id == id }.count == 1)
+        #expect(rows.first { $0.id == id }?.outcome == "ok")
+        #expect(rows.count == 6)
+    }
+}
+
 @Suite struct ShellFrameTests {
     /// Runs a command through a real non-interactive shell, after the session setup, and
     /// returns roughly what the terminal would show (escape sequences stripped, as Ghostty's

@@ -81,7 +81,7 @@ Each command is typed into that shell between two hidden marker lines. The app r
 | Path | Contents |
 |---|---|
 | `~/Library/Application Support/Jigowatt/hosts.json` | Host list (shared by the app and the MCP server) |
-| `~/Library/Application Support/Jigowatt/audit.jsonl` | Agent command log |
+| `~/Library/Application Support/Jigowatt/audit.jsonl` | Agent command log. Rotated at 5 MB into `audit.1.jsonl`…`audit.3.jsonl` (oldest deleted), so it stays under about 20 MB |
 | `~/Library/Application Support/Jigowatt/ghostty-overrides.conf` | Settings Jigowatt layers over your Ghostty config |
 | `~/Library/Application Support/Jigowatt/agent.sock` | Socket between `jigowatt-mcp` and the app (exists while the app runs) |
 
